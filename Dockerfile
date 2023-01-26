@@ -1,23 +1,22 @@
-# STEP 1
-# 1
-FROM node:16 AS builder
-# 2
-WORKDIR /app
-# 3
-COPY . .
-# 4
-RUN yarn
-# 5
-RUN yarn build
+FROM node:16.19.0-alpine3.16 as builder
 
-# STEP 2
-#6
-FROM node:16-alpine
-#7
+RUN mkdir app
 WORKDIR /app
-#8
-ENV NODE_ENV production
-#9
-COPY --from=builder /app ./
-#10
-CMD ["yarn","start:prod"]
+
+COPY . .
+
+RUN yarn install && yarn build
+
+FROM node:16.19.0-alpine3.16
+RUN mkdir app
+WORKDIR /app
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/yarn.lock ./
+COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/src ./src
+
+RUN yarn install --production
+
+CMD ["yarn", "start:prod"]
